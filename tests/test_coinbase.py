@@ -86,7 +86,7 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     registry.reload()
     p = provider("coinbase")
     assert p is not None, dict(registry.errors())
-    assert p.origin == "package: liminal-plugin-coinbase (liminal_plugin_coinbase:PLUGIN)"
+    assert p.origin in {"package: liminal-plugin-coinbase (liminal_plugin_coinbase:PLUGIN)", "plugins/liminal-plugin-coinbase (liminal_plugin_coinbase:PLUGIN)"}  # its package, or its checkout in the workspace\'s plugin directory
     assert p.version == version("liminal-plugin-coinbase") and liminal_plugin_coinbase.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "coinbase" in where or "coinbase" in why]
