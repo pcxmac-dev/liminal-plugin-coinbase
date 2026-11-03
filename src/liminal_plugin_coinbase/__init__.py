@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Iterator
 
-from liminal.config import Tier
-from liminal.models import Instrument
-from liminal.sources.archive import CRYPTO_PAIRS, EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds, crypto_pair as _pair
-from liminal.sources.archive import venue_view
-from liminal.sources.base import Page
-from liminal.sources.registry import Provider, public_client
-from liminal.sources.stream import Live, ns, trade
+from liminal_lib.config import Tier
+from liminal_lib.models import Instrument
+from liminal_lib.sources.archive import CRYPTO_PAIRS, EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds, crypto_pair as _pair
+from liminal_lib.sources.archive import venue_view
+from liminal_lib.sources.base import Page
+from liminal_lib.sources.registry import Provider, public_client
+from liminal_lib.sources.stream import Live, ns, trade
 
 BASE_URL = "https://api.exchange.coinbase.com"
 # Its plan and caps (once the app's config.PUBLIC_FEEDS["coinbase"]): all the history it holds, unless
