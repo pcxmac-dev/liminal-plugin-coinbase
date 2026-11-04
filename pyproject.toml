@@ -3,20 +3,20 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "liminal-plugin-coinbase"
+name = "plugin-integrator-coinbase"
 version = "0.2.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
 description = "Coinbase for Liminal: crypto minute and day bars from 2015 and its public trade stream, no key; the reference exchange for crypto."
 readme = "README.md"
 requires-python = ">=3.10"
 # the app it plugs into; which of its releases can load it is the plugin API the plugin declares
 # (PLUGIN.api, checked when the app loads it), not this line
-dependencies = ["liminal-lib"]
+dependencies = ["liminal-libs>=1.4.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 
 [project.entry-points."liminal.providers"]
-coinbase = "liminal_plugin_coinbase:PLUGIN"
+coinbase = "plugin_integrator_coinbase:PLUGIN"
 
 [tool.setuptools.packages.find]
 where = ["src"]
