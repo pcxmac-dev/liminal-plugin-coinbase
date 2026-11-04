@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "liminal-plugin-coinbase"
-version = "1.3.1"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+version = "0.2.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
 description = "Coinbase for Liminal: crypto minute and day bars from 2015 and its public trade stream, no key; the reference exchange for crypto."
 readme = "README.md"
 requires-python = ">=3.10"

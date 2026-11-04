@@ -1,10 +1,11 @@
 """Coinbase Exchange (coinbase.com) for Liminal: crypto minute and day bars from 2015 and its public trade
 stream, no key; the reference exchange for crypto (the app's composite model).
 
-A Liminal plugin released on its own (liminal.sources.registry: Provider), registered under the
-entry point group `liminal.providers` as `coinbase`. It relies on plugin API 1.6 and nothing of the
-app outside it (docs/ARCHITECTURE.md in liminal: "Providers are plugins"); its version is this
-distribution's (pyproject.toml), so PLUGIN.version is left empty.
+A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_lib.sources.archive:
+CryptoVenuePlugin, a crypto exchange's; liminal-lib 1.3.0: what it declares class attributes, what
+it does methods), registered under the entry point group `liminal.providers` as `coinbase`. It relies
+on nothing of the app outside the contract (docs/ARCHITECTURE.md in liminal-app: "Providers are
+plugins"); its version is this distribution's (pyproject.toml), so PLUGIN.version is left empty.
 """
 from __future__ import annotations
 
@@ -14,16 +15,16 @@ from datetime import date, datetime, timezone
 from typing import Iterator
 
 from liminal_lib.config import Tier
+from liminal_lib.freshness import Delay
 from liminal_lib.models import Instrument
 from liminal_lib.sources.archive import CRYPTO_PAIRS, EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds, crypto_pair as _pair
-from liminal_lib.sources.archive import venue_view
+from liminal_lib.sources.archive import CryptoVenuePlugin
 from liminal_lib.sources.base import Page
-from liminal_lib.sources.registry import Provider, public_client
 from liminal_lib.sources.stream import Live, ns, trade
 
 BASE_URL = "https://api.exchange.coinbase.com"
 # Its plan and caps (once the app's config.PUBLIC_FEEDS["coinbase"]): all the history it holds, unless
-# CRYPTO_VENUE_DAYS limits it (venue_view). Coinbase allows 10 public requests a second.
+# CRYPTO_VENUE_DAYS limits it (CryptoVenuePlugin.view). Coinbase allows 10 public requests a second.
 TIER = Tier("coinbase-public", requests_per_minute=300, history_years=None, history_start=date(2015, 1, 26))
 PER_RUN, PER_DAY = 3000, 20000
 
@@ -121,17 +122,35 @@ class CoinbaseStream:
         return [(ticker, trade(ns(msg["time"]), tid, msg["price"], msg["size"], tid))]
 
 
-PLUGIN = Provider(
-    api="1.6",  # the contract it needs (its stream and client in it); its version: the distribution's
-    name="coinbase", title="Coinbase",
-    build=lambda settings, budget: CoinbaseSource(public_client("coinbase", BASE_URL, settings, budget)),
-    assets=frozenset({"crypto"}), order=30, about="crypto minute and day bars from 2015 (no key); live trades",
-    tier=TIER, per_run=PER_RUN, per_day=PER_DAY, limits="10 requests per second per IP (public endpoints)",
-    kind="exchange", reference_for=frozenset({"crypto"}),
-    per_request={"day": CoinbaseSource.PAGE, "minute": CoinbaseSource.PAGE},
-    streams={"crypto": "real time, public trades (no key), coins open on a chart"},
-    live=(Live("coinbase", "crypto", stream=CoinbaseStream),),
-    view=venue_view("coinbase"),
-    rate=lambda settings: (8, 1.0),  # 10 a second per address: a minute's window let 300 go in a burst
-    carries=lambda spec: spec.ticker.upper() in CRYPTO_PAIRS,
-)
+class CoinbasePlugin(CryptoVenuePlugin):
+    """The feed's plugin, a crypto exchange's (its `assets` and `kind`; its source on the contract's
+    public client at `base_url`; its view: the plan and caps, all the history it holds unless
+    CRYPTO_VENUE_DAYS limits it): what it declares as attributes, what it does as methods (the window
+    its limiter keeps, the pairs it carries); the contract's defaults for the rest."""
+
+    api = "2.0"  # the contract it is written for (the class contract); its version: the distribution's
+    name = "coinbase"
+    title = "Coinbase"
+    about = "crypto minute and day bars from 2015 (no key); live trades"
+    order = 30
+    base_url = BASE_URL
+    source_class = CoinbaseSource
+    tier = TIER
+    per_run = PER_RUN
+    per_day = PER_DAY
+    limits = "10 requests per second per IP (public endpoints)"
+    reference_for = frozenset({"crypto"})
+    per_request = {"day": CoinbaseSource.PAGE, "minute": CoinbaseSource.PAGE}
+    streams = {"crypto": "real time, public trades (no key), coins open on a chart"}
+    live = (Live("coinbase", "crypto", stream=CoinbaseStream),)
+    # when its data is published (the library's freshness row for its plan): each minute once it closes
+    delays = {"coinbase-public": {"crypto": Delay("delay")}}
+
+    def rate(self, settings):
+        return (8, 1.0)  # 10 a second per address: a minute's window let 300 go in a burst
+
+    def carries(self, spec):
+        return spec.ticker.upper() in CRYPTO_PAIRS
+
+
+PLUGIN = CoinbasePlugin()

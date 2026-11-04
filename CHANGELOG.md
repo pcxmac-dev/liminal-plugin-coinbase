@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 (2026-11-03)
+
+- A class on plugin API 2.0 (liminal-lib 1.3.0; the user: "all the plugins under liminal should basically
+  follow inheritance/oop paradigm"): `CoinbasePlugin(CryptoVenuePlugin)`, a crypto exchange's plugin of
+  `liminal_lib.sources.archive` (its `assets` and `kind`; its source built on the contract's public client at
+  `base_url`; its `view`, the plan and caps with all the history it holds unless `CRYPTO_VENUE_DAYS` limits
+  it, once `venue_view`), what the `Provider` record declared as class attributes and its callbacks as
+  methods (`rate`, `carries`), `PLUGIN` its instance.
+- It declares its publication delay itself (`delays`: each minute once it closes, the row the library held
+  for the `coinbase-public` plan).
+- Every behaviour, limit and string as in 1.3.1. Versioned 0.2.0 with every Liminal distribution of the
+  release (its `release/0.2.0` branch; CI against the library's).
+
 ## 1.3.1 (2026-11-02)
 
 The plugin imports the library as `liminal_lib` and depends on liminal-lib (the app, renamed liminal-app, is no longer needed to run the tests; the user, 2026-11-02: "lets rename the app to liminal-app").

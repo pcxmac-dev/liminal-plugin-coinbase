@@ -9,14 +9,16 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal_lib import composite
+from liminal_lib import composite, freshness
 from liminal_lib.config import load_settings
+from liminal_lib.freshness import Delay
 from liminal_lib.sources import is_archive, markets, provider, rate_window, registry, supports
+from liminal_lib.sources.archive import CryptoVenuePlugin
 from liminal_lib.sources.http import PublicClient
 from liminal_lib.symbols import resolve
 
 import liminal_plugin_coinbase
-from liminal_plugin_coinbase import PER_DAY, PER_RUN, TIER, CoinbaseSource, CoinbaseStream
+from liminal_plugin_coinbase import BASE_URL, PER_DAY, PER_RUN, TIER, CoinbasePlugin, CoinbaseSource, CoinbaseStream
 
 from .conftest import FakeResponse, FakeSession
 
@@ -91,7 +93,7 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "coinbase" in where or "coinbase" in why]
     row = {r["name"]: r for r in registry.menu()}["coinbase"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-coinbase"), "1.6")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-coinbase"), "2.0")
 
 
 def test_it_keeps_the_facts_it_had_built_in():
@@ -108,3 +110,20 @@ def test_it_keeps_the_facts_it_had_built_in():
     assert composite.reference("crypto") == "coinbase"  # the reference exchange for crypto
     p = provider("coinbase")
     assert [(f.name, f.asset, f.stream) for f in p.live] == [("coinbase", "crypto", CoinbaseStream)]
+
+
+def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
+    p = liminal_plugin_coinbase.PLUGIN
+    assert isinstance(p, CoinbasePlugin) and isinstance(p, CryptoVenuePlugin) and p.api == "2.0" and not p.is_record
+    assert p.assets == frozenset({"crypto"}) and p.kind == "exchange"  # a crypto venue's, from its base
+    assert p.gives("build") and p.gives("view") and p.gives("rate") and p.gives("carries")
+    assert not p.has_scan and not p.has_settings and not p.gives("markets")
+    assert p.delays == {"coinbase-public": {"crypto": Delay("delay")}} and p.hours == {}
+    loaded = registry.reload()["coinbase"]
+    assert type(loaded) is CoinbasePlugin and (loaded.version, loaded.api) == (version("liminal-plugin-coinbase"), "2.0")
+    assert not [why for where, why in registry.errors() if "coinbase" in where or "coinbase" in why]
+    src = loaded.build(load_settings(env={}, env_file=None), 5)  # its base's build: its source on the public client
+    assert isinstance(src, CoinbaseSource) and isinstance(src.client, PublicClient) and src.client.base_url == BASE_URL
+    assert freshness.plan_delay(TIER, "crypto").kind == "delay"  # its own rule (CoinbasePlugin.delays; the library's too)
+    moved = p.with_(order=1)  # a changed copy (the registry's version and origin come this way)
+    assert type(moved) is CoinbasePlugin and moved.order == 1 and p.order == 30 and moved.rate(None) == (8, 1.0)
